@@ -36,7 +36,7 @@ import time
 # ============================================================
 
 # 时间测试的重复运行次数，次数越多结果越稳定，但总耗时也越长
-TIME_TEST_RUNS = 50
+TIME_TEST_RUNS = 200
 
 # 内存测试的重复运行次数
 MEMORY_TEST_RUNS = 5
@@ -100,7 +100,11 @@ def measure_execution_time(binary_path, runs=TIME_TEST_RUNS):
         times.remove(max(times))
         times.remove(min(times))
 
+    # times.sort()
+    # trim = max(1,int(len(times)*0.1))
+    # trimmed = times[trim:-trim]
     return sum(times) / len(times)
+    # return sum(trimmed) / len(trimmed)
 
 
 def measure_peak_memory_kb(binary_path, runs=MEMORY_TEST_RUNS):

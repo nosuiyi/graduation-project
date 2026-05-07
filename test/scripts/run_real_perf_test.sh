@@ -8,7 +8,7 @@
 #           请先运行 build_real_projects.sh 完成编译，再执行本脚本。
 #
 # 测试维度:
-#   1. 执行时间开销：10次取均值（去掉最高最低值），单位：秒
+#   1. 执行时间开销：30次取均值（去掉前后各10%极值），单位：秒
 #   2. 峰值内存开销：5次取均值（RSS），单位：KB
 #
 # 支持的项目:
@@ -34,7 +34,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 # ------------------------------------------------------------------------------
 # 测试配置（可按需修改）
 # ------------------------------------------------------------------------------
-TIME_RUNS=10      # 执行时间测试重复次数
+TIME_RUNS=30      # 执行时间测试重复次数
 MEMORY_RUNS=5     # 内存峰值测试重复次数
 
 # 测试文件大小（MB）
@@ -90,7 +90,7 @@ prepare_test_file() {
     log_ok "测试文件已生成：$(ls -lh "${FILE_PATH}" | awk '{print $5, $9}')"
 }
 
-# 测量执行时间（多次取均值，去掉最大最小值）
+# 测量执行时间（多次取均值，去掉前后各 10% 极值）
 # 参数: $1=二进制路径  $2=参数字符串  $3=重复次数
 # 返回: 平均时间（秒，4位小数）写入 stdout
 measure_time() {
@@ -106,22 +106,21 @@ measure_time() {
         printf "    第 %2d/%d 次: %s 秒\n" "${i}" "${RUNS}" "${T}" >&2
     done
 
-    # 用 awk 计算均值（去最大最小值，当 RUNS >= 5 时）
-    printf '%s\n' "${TIMES[@]}" | awk -v runs="${RUNS}" '
+    # 排序后去掉前后各 10% 极值，对剩余样本取均值
+    printf '%s\n' "${TIMES[@]}" | sort -n | awk -v runs="${RUNS}" '
     {
         vals[NR] = $1
-        sum += $1
-        if ($1 > max || NR==1) max=$1
-        if ($1 < min || NR==1) min=$1
+        total = NR
     }
     END {
-        if (runs >= 5) {
-            sum = sum - max - min
-            n = NR - 2
-        } else {
-            n = NR
+        trim = int(runs * 0.1)
+        if (trim < 1) trim = 1
+        sum = 0; count = 0
+        for (i = trim+1; i <= total-trim; i++) {
+            sum += vals[i]
+            count++
         }
-        printf "%.4f", sum/n
+        printf "%.4f", sum/count
     }'
 }
 
@@ -376,7 +375,7 @@ main() {
     echo "  动态 Canary 真实项目性能测试脚本"
     echo -e "==================================================${NC}"
     echo "  项目根目录: ${PROJECT_ROOT}"
-    echo "  执行时间测试次数: ${TIME_RUNS}（去掉最高最低值后取均值）"
+    echo "  执行时间测试次数: ${TIME_RUNS}（去掉前后各 10% 极值后取均值）"
     echo "  内存测试次数:     ${MEMORY_RUNS}"
     echo "  测试文件大小:     ${TEST_FILE_SIZE_MB} MB 随机数据"
     echo ""

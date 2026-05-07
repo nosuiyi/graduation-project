@@ -52,7 +52,7 @@ __attribute__((noinline)) long long safe_math_compute(int n) {
  *   局部数组：64 字节   计算量：64 次循环
  *   canary 开销占函数执行时间比例：最高（理论上界）
  * --------------------------------------------------------------- */
-#define OUTER_LOOPS_LIGHT  5000
+#define OUTER_LOOPS_LIGHT  5000  // 外层循环次数，确保总运行时长足够稳定
 #define INNER_LOOPS_LIGHT  1000
 
 __attribute__((noinline)) int risky_light(int seed) {
